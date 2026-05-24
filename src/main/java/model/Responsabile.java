@@ -5,6 +5,5 @@ public class Responsabile extends Docente {
         super(nome, cognome, email, login, password);
     }
 
-    // I metodi di logica complessa (creaLezione, valutaRichiesta)
-    // verranno implementati nelle fasi successive del progetto.
+
 }

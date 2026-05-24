@@ -1,4 +1,8 @@
 package model;
+
+import model.AnnoCorso;
+import model.GiornoSettimana;
+import model.StatoRichiesta;
 import java.time.LocalTime;
 
 public class TestModel {
@@ -16,8 +20,8 @@ public class TestModel {
 		// 2. Creazione delle entità di base (Aule e Insegnamenti)
 		Aula aulaA1 = new Aula("Aula A1");
 
-		// Quando creo l'insegnamento, passo il docente titolare (associazione)
-		Insegnamento progOggetti = new Insegnamento("Programmazione a Oggetti", 9, prof);
+		// CORRETTO: Ora passiamo anche AnnoCorso.II_ANNO (4 parametri anziché 3)
+		Insegnamento progOggetti = new Insegnamento("Programmazione a Oggetti", 9, AnnoCorso.II_ANNO, prof);
 
 		System.out.println("\nInsegnamento creato: " + progOggetti.getNome() +
 				" - Titolare: " + progOggetti.getDocenteTitolare().getCognome());
@@ -33,8 +37,9 @@ public class TestModel {
 		System.out.println("Aula: " + lezione1.getAula().getNome());
 
 		// 4. Creazione di una richiesta di spostamento
-		LocalTime nuovoInizio = LocalTime.of(14, 0);
-		LocalTime nuovaFine = LocalTime.of(16, 0);
+		// CORRETTO: Usiamo String per gli orari proposti per essere coerenti con il costruttore aggiornato per la GUI
+		String nuovoInizio = "14:00";
+		String nuovaFine = "16:00";
 		RichiestaSpostamento richiesta = new RichiestaSpostamento(lezione1, GiornoSettimana.MARTEDI, nuovoInizio, nuovaFine);
 
 		System.out.println("\nRichiesta di spostamento creata per la lezione:");
@@ -44,7 +49,5 @@ public class TestModel {
 		// 5. Simulazione di valutazione da parte del responsabile
 		richiesta.setStato(StatoRichiesta.APPROVATA);
 		System.out.println("Nuovo stato dopo valutazione del Responsabile: " + richiesta.getStato());
-
 	}
-
-}
+} // Chiusura corretta della classe

@@ -1,13 +1,14 @@
 package model;
+
 import model.GiornoSettimana;
 import java.time.LocalTime;
 
 public class Lezione {
+    private Insegnamento insegnamento;
     private GiornoSettimana giorno;
     private LocalTime oraInizio;
     private LocalTime oraFine;
     private Aula aula;
-    private Insegnamento insegnamento;
 
     public Lezione(Insegnamento insegnamento, GiornoSettimana giorno, LocalTime oraInizio, LocalTime oraFine, Aula aula) {
         this.insegnamento = insegnamento;
@@ -16,14 +17,17 @@ public class Lezione {
         this.oraFine = oraFine;
         this.aula = aula;
 
-        // Colleghiamo automaticamente la lezione all'aula e all'insegnamento
-        this.aula.addLezione(this);
+
         this.insegnamento.addLezione(this);
+        this.aula.addLezione(this);
     }
 
+    public Insegnamento getInsegnamento() { return insegnamento; }
     public GiornoSettimana getGiorno() { return giorno; }
     public LocalTime getOraInizio() { return oraInizio; }
     public LocalTime getOraFine() { return oraFine; }
     public Aula getAula() { return aula; }
-    public Insegnamento getInsegnamento() { return insegnamento; }
+    public void setGiorno(GiornoSettimana giorno) { this.giorno = giorno; }
+    public void setOraInizio(LocalTime oraInizio) { this.oraInizio = oraInizio; }
+    public void setOraFine(LocalTime oraFine) { this.oraFine = oraFine; }
 }

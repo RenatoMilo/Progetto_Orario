@@ -1,4 +1,5 @@
 package model;
+
 import model.GiornoSettimana;
 import model.StatoRichiesta;
 import java.time.LocalTime;
@@ -10,12 +11,12 @@ public class RichiestaSpostamento {
     private LocalTime oraFineProposta;
     private StatoRichiesta stato;
 
-    public RichiestaSpostamento(Lezione lezione, GiornoSettimana giornoProposto, LocalTime oraInizioProposta, LocalTime oraFineProposta) {
+    public RichiestaSpostamento(Lezione lezione, GiornoSettimana giornoProposto, String oraInizioProposta, String oraFineProposta) {
         this.lezioneDaSpostare = lezione;
         this.giornoProposto = giornoProposto;
-        this.oraInizioProposta = oraInizioProposta;
-        this.oraFineProposta = oraFineProposta;
-        this.stato = StatoRichiesta.IN_ATTESA; // Valore di default alla creazione
+        this.oraInizioProposta = LocalTime.parse(oraInizioProposta);
+        this.oraFineProposta = LocalTime.parse(oraFineProposta);
+        this.stato = StatoRichiesta.IN_ATTESA;
     }
 
     public Lezione getLezioneDaSpostare() { return lezioneDaSpostare; }

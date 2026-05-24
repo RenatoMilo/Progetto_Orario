@@ -17,4 +17,7 @@ public abstract class Utente {
 
     public String getNome() { return nome; }
     public String getCognome() { return cognome; }
+
+    public String getLogin() { return login; }
+    public String getPassword() { return password; }
 }

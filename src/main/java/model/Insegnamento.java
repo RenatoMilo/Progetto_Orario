@@ -1,19 +1,22 @@
 package model;
+
+import model.AnnoCorso;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Insegnamento {
     private String nome;
     private int cfu;
+    private AnnoCorso annoDiCorso;
     private Docente docenteTitolare;
-    // Implementazione della composizione: un insegnamento comprende molte lezioni
     private List<Lezione> lezioni = new ArrayList<>();
 
-    public Insegnamento(String nome, int cfu, Docente docenteTitolare) {
+    public Insegnamento(String nome, int cfu, AnnoCorso annoDiCorso, Docente docenteTitolare) {
         this.nome = nome;
         this.cfu = cfu;
+        this.annoDiCorso = annoDiCorso;
         this.docenteTitolare = docenteTitolare;
-        this.docenteTitolare.addInsegnamento(this); // Mantiene la coerenza bidirezionale
+        this.docenteTitolare.addInsegnamento(this);
     }
 
     public void addLezione(Lezione lezione) {
@@ -22,4 +25,5 @@ public class Insegnamento {
 
     public String getNome() { return nome; }
     public Docente getDocenteTitolare() { return docenteTitolare; }
+    public AnnoCorso getAnnoDiCorso() { return annoDiCorso; }
 }
