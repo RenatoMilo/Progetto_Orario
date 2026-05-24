@@ -3,7 +3,8 @@ Ho realizzato le classi del modello del dominio del problema in java usando file
 diversa classe e tipo enumerativo affinchè il codice risulti ben stutturato e
 facilmente navigabile.Ho riscritto le classi già presenti Utente e testModel affinchè fossero
 coerenti con la mia realizzazione del progetto.Ho riscritto il TestModel affinchè
-fosse un piccollo test delle classi che ho realizzato.
+fosse un piccollo test delle classi che ho realizzato.Per la gestione delle date ho usato una libreria di utilities di java affinchè potessero essere
+gestite in maniera semplice
 
 # Output atteso da TestModel
 ```
