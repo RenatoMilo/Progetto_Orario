@@ -16,14 +16,16 @@ public class LoginFrame extends JFrame {
     private JPasswordField txtPassword;
     private JButton btnLogin;
     private JLabel lblErrore;
+    private JButton btnRegistra; // Aggiunto bottone di registrazione
 
     public LoginFrame() {
         setContentPane(mainPanel);
         setTitle("Sistema Orario Lezioni - Login");
-        setSize(400, 300);
+        setSize(400, 350); // Leggermente aumentata l'altezza per ospitare il nuovo bottone
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        // Bottone Accedi
         btnLogin.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -40,24 +42,29 @@ public class LoginFrame extends JFrame {
                         DashboardStudente dashboard = new DashboardStudente();
                         dashboard.setVisible(true);
                         dispose();
-                    }
-                    else if (loggato instanceof Responsabile) {
+                    } else if (loggato instanceof Responsabile) {
                         DashboardResponsabile dashboardResponsabile = new DashboardResponsabile();
                         dashboardResponsabile.setVisible(true);
                         dispose();
-                    }
-
-
-                    else if (loggato instanceof Docente) {
+                    } else if (loggato instanceof Docente) {
                         DashboardDocente dashboardDocente = new DashboardDocente();
                         dashboardDocente.setVisible(true);
                         dispose();
                     }
-
-
                 } else {
                     lblErrore.setText("Credenziali errate! Riprova.");
                 }
+            }
+        });
+
+        // Bottone Registrati (Slide 30)
+        btnRegistra.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Istanzio il frame passandogli questo come frame chiamante (Slide 30)
+                RegistrazioneFrame regFrame = new RegistrazioneFrame(LoginFrame.this);
+                regFrame.setVisible(true);
+                setVisible(false); // Nascondo la schermata di login (Slide 30)
             }
         });
     }

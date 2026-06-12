@@ -10,6 +10,8 @@ public class Insegnamento {
     private AnnoCorso annoDiCorso;
     private Docente docenteTitolare;
     private List<Lezione> lezioni = new ArrayList<>();
+    private int idInsegnamento;
+
 
     public Insegnamento(String nome, int cfu, AnnoCorso annoDiCorso, Docente docenteTitolare) {
         this.nome = nome;
@@ -23,7 +25,16 @@ public class Insegnamento {
         this.lezioni.add(lezione);
     }
 
+    public int getIdInsegnamento() { return idInsegnamento; }
+    public void setIdInsegnamento(int idInsegnamento) { this.idInsegnamento = idInsegnamento; }
+
+
     public String getNome() { return nome; }
     public Docente getDocenteTitolare() { return docenteTitolare; }
     public AnnoCorso getAnnoDiCorso() { return annoDiCorso; }
+    @Override
+    public String toString() {
+        return nome + " (" + annoDiCorso + ")";
+    }
+
 }

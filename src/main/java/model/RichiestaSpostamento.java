@@ -10,6 +10,7 @@ public class RichiestaSpostamento {
     private LocalTime oraInizioProposta;
     private LocalTime oraFineProposta;
     private StatoRichiesta stato;
+    private int idRichiesta;
 
     public RichiestaSpostamento(Lezione lezione, GiornoSettimana giornoProposto, String oraInizioProposta, String oraFineProposta) {
         this.lezioneDaSpostare = lezione;
@@ -18,6 +19,8 @@ public class RichiestaSpostamento {
         this.oraFineProposta = LocalTime.parse(oraFineProposta);
         this.stato = StatoRichiesta.IN_ATTESA;
     }
+    public int getIdRichiesta() { return idRichiesta; }
+    public void setIdRichiesta(int idRichiesta) { this.idRichiesta = idRichiesta; }
 
     public Lezione getLezioneDaSpostare() { return lezioneDaSpostare; }
     public GiornoSettimana getGiornoProposto() { return giornoProposto; }

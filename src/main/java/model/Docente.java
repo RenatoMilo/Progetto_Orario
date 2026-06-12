@@ -15,4 +15,10 @@ public class Docente extends Utente {
     }
 
     public List<Insegnamento> getInsegnamentiTitolare() { return insegnamentiTitolare; }
+
+    @Override
+    public String toString() {
+        return "Prof. " + getNome() + " " + getCognome();
+    }
+
 }

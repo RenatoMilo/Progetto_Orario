@@ -9,6 +9,7 @@ public class Lezione {
     private LocalTime oraInizio;
     private LocalTime oraFine;
     private Aula aula;
+    private int idLezione;
 
     public Lezione(Insegnamento insegnamento, GiornoSettimana giorno, LocalTime oraInizio, LocalTime oraFine, Aula aula) {
         this.insegnamento = insegnamento;
@@ -21,6 +22,9 @@ public class Lezione {
         this.insegnamento.addLezione(this);
         this.aula.addLezione(this);
     }
+
+    public int getIdLezione() { return idLezione; }
+    public void setIdLezione(int idLezione) { this.idLezione = idLezione; }
 
     public Insegnamento getInsegnamento() { return insegnamento; }
     public GiornoSettimana getGiorno() { return giorno; }

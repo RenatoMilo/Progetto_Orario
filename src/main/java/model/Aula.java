@@ -6,6 +6,7 @@ import java.util.List;
 public class Aula {
     private String nome;
     private List<Lezione> lezioniOspitate = new ArrayList<>();
+    private int idAula;
 
     public Aula(String nome) {
         this.nome = nome;
@@ -26,5 +27,11 @@ public class Aula {
         return true;
     }
 
+    public int getIdAula() { return idAula; }
+    public void setIdAula(int idAula) { this.idAula = idAula; }
     public String getNome() { return nome; }
+    @Override
+    public String toString() {
+        return nome;
+    }
 }

@@ -18,34 +18,61 @@ public class DashboardResponsabile extends JFrame {
     private JButton btnApprova;
     private JButton btnRifiuta;
     private JButton btnLogout;
+    private JButton btnRegistra;
+    private JButton btnPianifica;
 
     private List<RichiestaSpostamento> richiesteAttive;
     private DefaultTableModel tableModel;
 
     public DashboardResponsabile() {
-
+        // Impostazioni base della finestra
         setContentPane(mainPanel);
         setTitle("Area Coordinatore / Responsabile Orari");
         setSize(700, 450);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-
+        // Benvenuto personalizzato
         Responsabile respLoggato = (Responsabile) Controller.getInstance().getUtenteLoggato();
         lblBenvenuto.setText("Pannello Coordinatore: Prof. " + respLoggato.getNome() + " " + respLoggato.getCognome());
 
-
+        // Inizializzazione della tabella
         String[] colonne = {"Materia", "Docente Richiedente", "Giorno Prop.", "Ora Inizio Prop.", "Ora Fine Prop."};
         tableModel = new DefaultTableModel(colonne, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
-        };
+        }; // Qui si chiude correttamente la definizione del tableModel
+
         tabellaRichieste.setModel(tableModel);
 
-
+        // Caricamento dei dati iniziali
         aggiornaTabella();
 
+        // --- GESTIONE DEI PULSANTI (Listeners) ---
 
+        // 1. Bottone Registrazione (Slide 30)
+        btnRegistra.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Istanzio il secondo frame passandogli 'this' (frame chiamante) (Slide 30)
+                RegistrazioneFrame regFrame = new RegistrazioneFrame(DashboardResponsabile.this);
+                regFrame.setVisible(true);
+                setVisible(false); // Nascondo temporaneamente la Dashboard (Slide 30)
+            }
+        });
+
+        // 2. Bottone Pianificazione Nuova Lezione (Slide 30)
+        btnPianifica.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Istanzio il frame passandogli 'this' (frame chiamante) (Slide 30)
+                InserimentoLezioneFrame lezFrame = new InserimentoLezioneFrame(DashboardResponsabile.this);
+                lezFrame.setVisible(true);
+                setVisible(false); // Nascondo temporaneamente la Dashboard (Slide 30)
+            }
+        });
+
+        // 3. Bottone Approva Spostamento
         btnApprova.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -61,7 +88,7 @@ public class DashboardResponsabile extends JFrame {
             }
         });
 
-
+        // 4. Bottone Rifiuta Richiesta
         btnRifiuta.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -77,7 +104,7 @@ public class DashboardResponsabile extends JFrame {
             }
         });
 
-
+        // 5. Bottone Logout
         btnLogout.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
