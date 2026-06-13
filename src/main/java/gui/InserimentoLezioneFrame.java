@@ -4,12 +4,22 @@ import controller.Controller;
 import model.Aula;
 import model.Docente;
 import model.Insegnamento;
-import model.*;
+import model.AnnoCorso;
+import model.GiornoSettimana;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
+/**
+ * Finestra di Boundary adibita all'inserimento e alla pianificazione delle lezioni.
+ * <p>
+ * Offre la possibilità di creare aule ed insegnamenti
+ * tramite l'uso di comode finestre modali di tipo JOptionPanel
+ * </p>
+ */
 public class InserimentoLezioneFrame extends JFrame {
     private JPanel mainPanel;
     private JComboBox<Insegnamento> cbInsegnamento;
@@ -19,10 +29,17 @@ public class InserimentoLezioneFrame extends JFrame {
     private JComboBox<Aula> cbAula;
     private JButton btnSalva;
     private JButton btnAnnulla;
-    private JButton btnNuovoInsegnamento; // Bottone "+" Insegnamento
-    private JButton btnNuovaAula;        // Bottone "+" Aula
+    private JButton btnNuovoInsegnamento;
+    private JButton btnNuovaAula;
     private JFrame frameChiamante;
 
+    /**
+     * Costruttore della classe. Inizializza i componenti grafici del form,
+     * popola i menu a tendina interrogando lo strato di controllo e implementa
+     * i listener per l'inserimento dinamico di aule e corsi.
+     *
+     * @param frameChiamante Il JFrame genitore
+     */
     public InserimentoLezioneFrame(JFrame frameChiamante) {
         this.frameChiamante = frameChiamante;
 
@@ -32,7 +49,7 @@ public class InserimentoLezioneFrame extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(frameChiamante);
 
-        // Popolamento iniziale dei menu a tendina
+        // Caricamento dei dati dai ComboBox
         ricaricaInsegnamenti();
         ricaricaAule();
 
@@ -40,9 +57,7 @@ public class InserimentoLezioneFrame extends JFrame {
             cbGiorno.addItem(g);
         }
 
-        // --- GESTIONE DEI PULSANTI "+" (Slide 26) ---
-
-        // Inserimento Aula "on the fly"
+        // Inserimento Aula  tramite Finestra Modale di Dialogo
         btnNuovaAula.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -51,7 +66,7 @@ public class InserimentoLezioneFrame extends JFrame {
                     boolean ok = Controller.getInstance().inserisciNuovaAula(nomeAula.trim());
                     if (ok) {
                         JOptionPane.showMessageDialog(null, "Aula registrata con successo!");
-                        ricaricaAule(); // Aggiorna il ComboBox all'istante
+                        ricaricaAule(); // Aggiorna a runtime il ComboBox
                     } else {
                         JOptionPane.showMessageDialog(null, "Errore: Aula già esistente.");
                     }
@@ -59,7 +74,7 @@ public class InserimentoLezioneFrame extends JFrame {
             }
         });
 
-        // Inserimento Insegnamento "on the fly"
+        // Inserimento Insegnamento "on the fly" con Dialog strutturati
         btnNuovoInsegnamento.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -76,20 +91,20 @@ public class InserimentoLezioneFrame extends JFrame {
                     return;
                 }
 
-                // Finestra modale con scelta a tendina per l'Anno Corso (Slide 26)
+                // Scelta dell'anno di corso tramite ComboBox integrato in un Dialog (Slide 26)
                 AnnoCorso anno = (AnnoCorso) JOptionPane.showInputDialog(
                         null, "Seleziona l'anno di corso:", "Anno Corso",
                         JOptionPane.QUESTION_MESSAGE, null, AnnoCorso.values(), AnnoCorso.I_ANNO
                 );
                 if (anno == null) return;
 
-                java.util.List<Docente> docentiDisponibili = Controller.getInstance().getDocenti();
+                List<Docente> docentiDisponibili = Controller.getInstance().getDocenti();
                 if (docentiDisponibili.isEmpty()) {
                     JOptionPane.showMessageDialog(null, "Errore: Non ci sono docenti nel sistema.");
                     return;
                 }
 
-                // Finestra modale con scelta a tendina per il Docente titolare
+                // Scelta del docente titolare tramite ComboBox integrato in un Dialog
                 Object[] docentiArr = docentiDisponibili.toArray();
                 Docente docenteSel = (Docente) JOptionPane.showInputDialog(
                         null, "Seleziona il docente titolare:", "Docente Titolare",
@@ -97,18 +112,18 @@ public class InserimentoLezioneFrame extends JFrame {
                 );
                 if (docenteSel == null) return;
 
-                // Invio al Controller per salvare su DB
+                // Richiesta di inserimento fisico sul DB tramite Controller
                 boolean ok = Controller.getInstance().inserisciNuovoInsegnamento(nomeInsegnamento.trim(), cfu, anno, docenteSel);
                 if (ok) {
                     JOptionPane.showMessageDialog(null, "Insegnamento registrato con successo!");
-                    ricaricaInsegnamenti(); // Aggiorna il ComboBox all'istante
+                    ricaricaInsegnamenti(); // Aggiorna a runtime il ComboBox
                 } else {
                     JOptionPane.showMessageDialog(null, "Errore durante l'inserimento.");
                 }
             }
         });
 
-        // Bottone Salva Lezione
+        // Salvataggio formale della lezione pianificata
         btnSalva.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -136,6 +151,9 @@ public class InserimentoLezioneFrame extends JFrame {
         btnAnnulla.addActionListener(e -> tornaIndietro());
     }
 
+    /**
+     * Ricarica e aggiorna a runtime la lista dei corsi di insegnamento disponibili nel ComboBox.
+     */
     private void ricaricaInsegnamenti() {
         cbInsegnamento.removeAllItems();
         for (Insegnamento ins : Controller.getInstance().getInsegnamenti()) {
@@ -143,6 +161,9 @@ public class InserimentoLezioneFrame extends JFrame {
         }
     }
 
+    /**
+     * Ricarica e aggiorna a runtime la lista delle aule disponibili nel ComboBox.
+     */
     private void ricaricaAule() {
         cbAula.removeAllItems();
         for (Aula a : Controller.getInstance().getAule()) {
@@ -150,8 +171,13 @@ public class InserimentoLezioneFrame extends JFrame {
         }
     }
 
+    /**
+     * Restituisce la visibilità alla Dashboard chiamante e distrugge la finestra
+     * corrente per svuotare la memoria
+     */
     private void tornaIndietro() {
-        frameChiamante.setVisible(true);
-        dispose();
+        frameChiamante.setVisible(true); // Restituisce visibilità alla Dashboard (
+        dispose(); // Dealloca l'oggetto corrente
     }
+
 }

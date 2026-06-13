@@ -1,11 +1,20 @@
 package gui;
 
 import controller.Controller;
-import model.*;
+import model.AnnoCorso;
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+/**
+ * Finestra di Boundary dedita all'inserimento e alla registrazione di nuove
+ * anagrafiche utente (Studenti o Docenti) all'interno della base di dati.
+ * <p>
+ * Implementa la tecnica accademica della comunicazione unidirezionale tra JFrame
+ * conservando il riferimento al frame chiamante.
+ * </p>
+ */
 public class RegistrazioneFrame extends JFrame {
     private JPanel mainPanel;
     private JTextField txtNome;
@@ -17,8 +26,13 @@ public class RegistrazioneFrame extends JFrame {
     private JComboBox<AnnoCorso> cbAnno;
     private JButton btnSalva;
     private JButton btnAnnulla;
-    private JFrame frameChiamante;
+    private JFrame frameChiamante; // Riferimento al frame chiamante per ristabilire controllo
 
+    /**
+     * Costruttore della classe.
+     *
+     * @param frameChiamante Il JFrame genitore che ha originato la chiamata
+     */
     public RegistrazioneFrame(JFrame frameChiamante) {
         this.frameChiamante = frameChiamante;
 
@@ -28,7 +42,7 @@ public class RegistrazioneFrame extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(frameChiamante);
 
-        // Popoliamo i JComboBox
+        // Popolamento manuale delle scelte
         cbRuolo.addItem("STUDENTE");
         cbRuolo.addItem("DOCENTE");
         cbRuolo.addItem("RESPONSABILE");
@@ -37,10 +51,9 @@ public class RegistrazioneFrame extends JFrame {
             cbAnno.addItem(a);
         }
 
-        // Di default abilitiamo il campo anno corso per gli studenti
         cbAnno.setEnabled(true);
 
-        // Listener per abilitare/disabilitare anno corso a seconda del ruolo
+        // Abilitazione o disabilitazione dinamica dell'anno in base al ruolo selezionato
         cbRuolo.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -49,7 +62,7 @@ public class RegistrazioneFrame extends JFrame {
             }
         });
 
-        // Gestione dell'azione sul bottone Salva
+        // Invio dei dati anagrafici per la persistenza transazionale
         btnSalva.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -61,12 +74,13 @@ public class RegistrazioneFrame extends JFrame {
                 String ruolo = cbRuolo.getSelectedItem().toString();
                 String anno = cbAnno.getSelectedItem().toString();
 
+                // Validazione minima dei campi obbligatori
                 if (nome.isEmpty() || cognome.isEmpty() || email.isEmpty() || login.isEmpty() || pwd.isEmpty()) {
                     JOptionPane.showMessageDialog(null, "Compila tutti i campi obbligatori!");
                     return;
                 }
 
-                // Chiamo il Controller per inserire nel DB (matricola viene omessa) (Slide 15)
+                // Chiamata al Controller per l'inserimento fisico
                 boolean successo = Controller.getInstance().registraNuovoUtente(nome, cognome, email, login, pwd, ruolo, anno);
                 if (successo) {
                     JOptionPane.showMessageDialog(null, "Nuovo utente registrato con successo nel Database!");
@@ -77,6 +91,7 @@ public class RegistrazioneFrame extends JFrame {
             }
         });
 
+        // Evento di annullamento
         btnAnnulla.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -85,8 +100,13 @@ public class RegistrazioneFrame extends JFrame {
         });
     }
 
+    /**
+     * Restituisce la visibilità al frame chiamante e distrugge la finestra
+     * corrente per deallocare la memoria della JVM
+     */
     private void tornaIndietro() {
-        frameChiamante.setVisible(true);
-        dispose();
+        frameChiamante.setVisible(true); // Restituisce visibilità alla Dashboard
+        dispose(); // Dealloca l'oggetto corrente
     }
+
 }

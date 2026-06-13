@@ -6,11 +6,23 @@ import model.RichiestaSpostamento;
 import model.StatoRichiesta;
 
 import javax.swing.*;
+import javax.swing.plaf.FontUIResource;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.StyleContext;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+import java.util.Locale;
 
+/**
+ * Finestra di Boundary adibita al ruolo gestionale del Responsabile (Coordinatore).
+ * <p>
+ * Offre una panoramica delle proposte di spostamento inviate dai docenti e
+ * mette a disposizione gli eventi di approvazione o rifiuto dei ticket,
+ * oltre ai collegamenti per la definizione di corsi ed aule.
+ * </p>
+ */
 public class DashboardResponsabile extends JFrame {
     private JPanel mainPanel;
     private JLabel lblBenvenuto;
@@ -24,55 +36,54 @@ public class DashboardResponsabile extends JFrame {
     private List<RichiestaSpostamento> richiesteAttive;
     private DefaultTableModel tableModel;
 
+    /**
+     * Costruttore della classe. Inizializza i componenti visivi e registra
+     * gli ascoltatori degli eventi per l'approvazione, il rifiuto e per l'apertura
+     * dei frame secondari di registrazione e pianificazione lezioni.
+     */
     public DashboardResponsabile() {
-        // Impostazioni base della finestra
         setContentPane(mainPanel);
         setTitle("Area Coordinatore / Responsabile Orari");
         setSize(700, 450);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Benvenuto personalizzato
         Responsabile respLoggato = (Responsabile) Controller.getInstance().getUtenteLoggato();
         lblBenvenuto.setText("Pannello Coordinatore: Prof. " + respLoggato.getNome() + " " + respLoggato.getCognome());
 
-        // Inizializzazione della tabella
+        // Inizializzazione griglia richieste pendenti
         String[] colonne = {"Materia", "Docente Richiedente", "Giorno Prop.", "Ora Inizio Prop.", "Ora Fine Prop."};
         tableModel = new DefaultTableModel(colonne, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
-        }; // Qui si chiude correttamente la definizione del tableModel
-
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         tabellaRichieste.setModel(tableModel);
 
-        // Caricamento dei dati iniziali
         aggiornaTabella();
 
-        // --- GESTIONE DEI PULSANTI (Listeners) ---
-
-        // 1. Bottone Registrazione (Slide 30)
+        // 1. Apertura della finestra di Registrazione utente
         btnRegistra.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Istanzio il secondo frame passandogli 'this' (frame chiamante) (Slide 30)
                 RegistrazioneFrame regFrame = new RegistrazioneFrame(DashboardResponsabile.this);
                 regFrame.setVisible(true);
-                setVisible(false); // Nascondo temporaneamente la Dashboard (Slide 30)
+                setVisible(false); // Passa il controllo nascondendo il chiamante
             }
         });
 
-        // 2. Bottone Pianificazione Nuova Lezione (Slide 30)
+        // 2. Apertura della finestra di Pianificazione nuove lezioni
         btnPianifica.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Istanzio il frame passandogli 'this' (frame chiamante) (Slide 30)
                 InserimentoLezioneFrame lezFrame = new InserimentoLezioneFrame(DashboardResponsabile.this);
                 lezFrame.setVisible(true);
-                setVisible(false); // Nascondo temporaneamente la Dashboard (Slide 30)
+                setVisible(false); // Passa il controllo nascondendo il chiamante
             }
         });
 
-        // 3. Bottone Approva Spostamento
+        // 3. Approvazione dello spostamento orario (Slide 21)
         btnApprova.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -88,7 +99,7 @@ public class DashboardResponsabile extends JFrame {
             }
         });
 
-        // 4. Bottone Rifiuta Richiesta
+        // 4. Rifiuto della richiesta di spostamento
         btnRifiuta.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -104,17 +115,21 @@ public class DashboardResponsabile extends JFrame {
             }
         });
 
-        // 5. Bottone Logout
+        // 5. Logout di sistema
         btnLogout.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Controller.getInstance().effettuaLogout();
                 new LoginFrame().setVisible(true);
-                dispose();
+                dispose(); // Distrugge la dashboard liberando le risorse
             }
         });
     }
 
+    /**
+     * Aggiorna a runtime la tabella delle richieste attive in sospeso recuperando
+     * i dati aggiornati dallo strato di controllo.
+     */
     private void aggiornaTabella() {
         tableModel.setRowCount(0);
         richiesteAttive = Controller.getInstance().getRichiesteInAttesa();
@@ -128,4 +143,5 @@ public class DashboardResponsabile extends JFrame {
             });
         }
     }
+
 }

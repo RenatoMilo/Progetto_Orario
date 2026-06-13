@@ -5,9 +5,22 @@ import database_connection.ConnessioneDatabase;
 import java.sql.*;
 import java.util.ArrayList;
 
+/**
+ * Classe concreta che realizza l'accesso persistente alle informazioni degli utenti
+ * all'interno del database relazionale PostgreSQL.
+ * <p>
+ * Implementa l'interfaccia {@link UtenteDAO} e si occupa di gestire la persistenza
+ * dell'ereditarietà (Joined Table) tra la tabella "Utente" e le tabelle collegate
+ * "Studente" e "Docente".
+ * </p>
+ */
 public class UtenteImplementazionePostgresDAO implements UtenteDAO {
     private Connection connection;
 
+    /**
+     * Costruttore della classe. Inizializza il riferimento alla connessione
+     * verso il DBMS PostgreSQL recuperando l'istanza dal Singleton ConnessioneDatabase.
+     */
     public UtenteImplementazionePostgresDAO() {
         try {
             this.connection = ConnessioneDatabase.getInstance().getConnection();
@@ -16,6 +29,15 @@ public class UtenteImplementazionePostgresDAO implements UtenteDAO {
         }
     }
 
+    /**
+     * Esegue l'autenticazione delle credenziali nel database tramite una query
+     * di selezione con i PreparedStatement per prevenire rischi di SQL Injection.
+     *
+     * @param login    Lo username inserito per l'autenticazione
+     * @param password La password associata all'account
+     * @return Stringa contenente il ruolo rilevato ('STUDENTE', 'DOCENTE', 'RESPONSABILE') se corretto, altrimenti null
+     * @throws SQLException Se si verifica un errore durante l'esecuzione dell'interrogazione SQL
+     */
     @Override
     public String loginDB(String login, String password) throws SQLException {
         String query = "SELECT u.\"ID_Utente\", d.\"IsResponsabile\", s.\"ID_Utente\" AS \"IsStudente\" " +
@@ -39,9 +61,23 @@ public class UtenteImplementazionePostgresDAO implements UtenteDAO {
                 }
             }
         }
-        return null; // Credenziali non corrispondenti
+        return null;
     }
 
+    /**
+     * Recupera le informazioni anagrafiche e accademiche complete dell'utente loggato
+     * eseguendo una JOIN tra la tabella Utente e le relative tabelle figlie.
+     *
+     * @param login          Username dell'utente da ricercare
+     * @param idUtente       Lista di destinazione per la chiave primaria
+     * @param nome           Lista di destinazione per il nome
+     * @param cognome        Lista di destinazione per il cognome
+     * @param email          Lista di destinazione per l'email
+     * @param matricola      Lista di destinazione per la matricola
+     * @param annoCorso      Lista di destinazione per l'anno di corso
+     * @param isResponsabile Lista di destinazione per il flag amministrativo
+     * @throws SQLException Se si verifica un errore durante l'esecuzione SQL
+     */
     @Override
     public void leggiDatiUtenteLoggatoDB(String login, ArrayList<Integer> idUtente, ArrayList<String> nome, ArrayList<String> cognome, ArrayList<String> email, ArrayList<String> matricola, ArrayList<String> annoCorso, ArrayList<Boolean> isResponsabile) throws SQLException {
         String query = "SELECT u.*, s.\"Matricola\", s.\"AnnoCorso\", d.\"IsResponsabile\" " +
@@ -70,6 +106,19 @@ public class UtenteImplementazionePostgresDAO implements UtenteDAO {
         }
     }
 
+    /**
+     * Recupera l'elenco completo di tutti i docenti inseriti a database
+     * eseguendo una JOIN tra Utente e Docente.
+     *
+     * @param idDocenti      Lista di destinazione per l'ID dei docenti
+     * @param nomi           Lista di destinazione per i nomi
+     * @param cognomi        Lista di destinazione per i cognomi
+     * @param email          Lista di destinazione per le email
+     * @param logins         Lista di destinazione per gli username
+     * @param password       Lista di destinazione per le password
+     * @param isResponsabile Lista di destinazione per i flag amministrativi
+     * @throws SQLException Se si verifica un errore nell'interrogazione del database
+     */
     @Override
     public void leggiTuttiIDocentiDB(ArrayList<Integer> idDocenti, ArrayList<String> nomi, ArrayList<String> cognomi, ArrayList<String> email, ArrayList<String> logins, ArrayList<String> password, ArrayList<Boolean> isResponsabile) throws SQLException {
         String query = "SELECT u.*, d.\"IsResponsabile\" FROM public.\"Utente\" u JOIN public.\"Docente\" d ON u.\"ID_Utente\" = d.\"ID_Utente\";";
@@ -87,7 +136,19 @@ public class UtenteImplementazionePostgresDAO implements UtenteDAO {
         }
     }
 
-    // UNICO METODO DI REGISTRAZIONE (Senza il parametro matricola, allineato a UtenteDAO)
+    /**
+     * Registra un nuovo utente. Esegue l'inserimento in modo transazionale prima sulla
+     * tabella padre e poi, tramite la chiave generata, sulla tabella figlia corrispondente.
+     *
+     * @param nome      Nome dell'utente
+     * @param cognome   Cognome dell'utente
+     * @param email     E-mail dell'utente
+     * @param login     Username per l'autenticazione
+     * @param password  Password associata
+     * @param ruolo     Il ruolo dell'account ('STUDENTE', 'DOCENTE', 'RESPONSABILE')
+     * @param annoCorso L'anno di corso (solo per lo studente)
+     * @throws SQLException Se si verifica un errore durante l'inserimento o la transazione SQL
+     */
     @Override
     public void registraUtenteDB(String nome, String cognome, String email, String login, String password, String ruolo, String annoCorso) throws SQLException {
         String queryUtente = "INSERT INTO public.\"Utente\" (\"Nome\", \"Cognome\", \"Email\", \"Login\", \"Password\") VALUES (?, ?, ?, ?, ?) RETURNING \"ID_Utente\";";
@@ -104,7 +165,6 @@ public class UtenteImplementazionePostgresDAO implements UtenteDAO {
                     int idUtente = rs.getInt("ID_Utente");
 
                     if (ruolo.equalsIgnoreCase("STUDENTE")) {
-                        // Omettiamo la colonna Matricola: Postgres userà il DEFAULT generato dalla SEQUENCE
                         String queryStudente = "INSERT INTO public.\"Studente\" (\"ID_Utente\", \"AnnoCorso\") VALUES (?, ?);";
                         try (PreparedStatement psStudente = connection.prepareStatement(queryStudente)) {
                             psStudente.setInt(1, idUtente);

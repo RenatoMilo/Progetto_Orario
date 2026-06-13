@@ -2,8 +2,8 @@ package controller;
 
 import model.*;
 import dao.*;
-import implementazioneDao.*; // Importa dal tuo pacchetto corretto
-import database_connection.ConnessioneDatabase; // Importa dal tuo pacchetto corretto
+import implementazioneDao.*;
+import database_connection.*;
 
 import java.sql.SQLException;
 import java.time.LocalTime;
@@ -12,27 +12,44 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Questa classe rappresenta il nucleo decisionale dell'applicazione (strato di Controllo).
+ * <p>
+ * Agisce come unico punto di contatto tra le interfacce grafiche di Boundary e lo strato
+ * delle entità persistenti del database (DAO,database) o non in memoria (Model).
+ * Coordina i flussi di dati, la sincronizzazione iniziale e l'esecuzione della logica applicativa.
+ * </p>
+ */
 public class Controller {
 
+	/**
+	 * Riferimento statico all'unica istanza attiva del Controller (Pattern Singleton).
+	 */
 	private static Controller instance;
 
-	// Rappresentazione in memoria (transiente, rapida per la GUI) (Slide 10)
+
 	private List<Utente> utenti;
 	private List<Aula> aule;
 	private List<Insegnamento> insegnamenti;
 	private List<Lezione> lezioni;
 	private List<RichiestaSpostamento> richieste;
 
-	// Riferimenti ai DAO per l'accesso persistente al DB (Slide 7)
+
+	private Utente utenteLoggato;
+	private List<Docente> docenti = new ArrayList<>();
+
+
 	private UtenteDAO utenteDAO;
 	private AulaDAO aulaDAO;
 	private InsegnamentoDAO insegnamentoDAO;
 	private LezioneDAO lezioneDAO;
 	private RichiestaSpostamentoDAO richiestaSpostamentoDAO;
 
-	private Utente utenteLoggato;
-	private List<Docente> docenti = new ArrayList<>();
-
+	/**
+	 * Costruttore privato della classe. Inizializza le liste di cache,
+	 * istanzia le implementazioni concrete dei DAO per PostgreSQL e
+	 * avvia la sincronizzazione automatica dei dati all'avvio.
+	 */
 	private Controller() {
 		utenti = new ArrayList<>();
 		aule = new ArrayList<>();
@@ -40,17 +57,23 @@ public class Controller {
 		lezioni = new ArrayList<>();
 		richieste = new ArrayList<>();
 
-		// Istanziamo le classi DAO reali con i nomi corretti del tuo progetto
+		// Inizializzazione fisica dei connettori DAO
 		utenteDAO = new UtenteImplementazionePostgresDAO();
 		aulaDAO = new AulaImplementazionePostgresDAO();
 		insegnamentoDAO = new InsegnamentoImplementazionePostgresDAO();
 		lezioneDAO = new LezioneImplementazionePostgresDAO();
-		richiestaSpostamentoDAO = new RichiestaSpostamentoImplementazioneDAO(); // Nome corretto dal tuo pannello
+		richiestaSpostamentoDAO = new RichiestaSpostamentoImplementazioneDAO();
 
-		// Sincronizziamo lo stato all'avvio caricando i dati reali da PostgreSQL (Slide 17)
+		// Caricamento e allineamento dati da database
 		sincronizzaConDatabase();
 	}
 
+	/**
+	 * Restituisce l'unica istanza attiva del Controller. Se non esiste,
+	 * provvede a crearla garantendo l'unicità dello stato per tutta l'applicazione.
+	 *
+	 * @return L'istanza singleton del Controller
+	 */
 	public static Controller getInstance() {
 		if (instance == null) {
 			instance = new Controller();
@@ -58,13 +81,23 @@ public class Controller {
 		return instance;
 	}
 
-	// --- AUTENTICAZIONE E LOGGATO DAL DB ---
+	/**
+	 * Gestisce la fase di verifica delle credenziali inserite dall'utente.
+	 * <p>
+	 * Se l'autenticazione sul database ha successo, recupera i dati anagrafici associati,
+	 * istanzia l'oggetto corretto nel Model (Studente, Docente o Responsabile) e lo
+	 * imposta come utente attivo della sessione corrente.
+	 * </p>
+	 *
+	 * @param login    Lo username inserito nella maschera di login
+	 * @param password La password inserita (protetta)
+	 * @return {@code true} se le credenziali corrispondono a un account valido, altrimenti {@code false}
+	 */
 	public boolean effettuaLogin(String login, String password) {
 		try {
-			// Verifichiamo le credenziali direttamente sul DB
+			// Interrogazione diretta sul database per la verifica dei dati
 			String ruolo = utenteDAO.loginDB(login, password);
 			if (ruolo != null) {
-				// Recuperiamo i dati dell'utente dal DB tramite liste d'appoggio
 				ArrayList<Integer> idUtente = new ArrayList<>();
 				ArrayList<String> nome = new ArrayList<>();
 				ArrayList<String> cognome = new ArrayList<>();
@@ -76,7 +109,7 @@ public class Controller {
 				utenteDAO.leggiDatiUtenteLoggatoDB(login, idUtente, nome, cognome, email, matricola, annoCorso, isResponsabile);
 
 				if (!idUtente.isEmpty()) {
-					// Istanziamo l'oggetto del Model corretto a seconda del ruolo
+
 					if (ruolo.equals("STUDENTE")) {
 						AnnoCorso anno = AnnoCorso.valueOf(annoCorso.get(0));
 						Studente s = new Studente(nome.get(0), cognome.get(0), email.get(0), login, password, matricola.get(0), anno);
@@ -101,15 +134,28 @@ public class Controller {
 		return false;
 	}
 
+	/**
+	 * Termina la sessione dell'utente corrente rimuovendone il riferimento in memoria.
+	 */
 	public void effettuaLogout() {
 		this.utenteLoggato = null;
 	}
 
+	/**
+	 * Restituisce l'istanza dell'utente correntemente autenticato a sistema.
+	 *
+	 * @return L'oggetto {@link Utente} loggato, o {@code null} se non vi sono sessioni attive
+	 */
 	public Utente getUtenteLoggato() {
 		return utenteLoggato;
 	}
 
-	// --- METODI DI CONSULTAZIONE IN MEMORIA ---
+	/**
+	 * Restituisce la lista filtrata delle lezioni associate all'anno di corso dello studente.
+	 *
+	 * @param studente Lo studente di cui filtrare il piano orario
+	 * @return Una {@link List} di lezioni corrispondenti all'anno di studi dello studente
+	 */
 	public List<Lezione> getLezioniPerStudente(Studente studente) {
 		List<Lezione> risultato = new ArrayList<>();
 		for (Lezione l : lezioni) {
@@ -120,6 +166,12 @@ public class Controller {
 		return risultato;
 	}
 
+	/**
+	 * Restituisce la lista delle lezioni associate alle cattedre presiedute da un docente.
+	 *
+	 * @param docente Il docente di cui filtrare l'orario didattico
+	 * @return Una {@link List} di lezioni assegnate a quel docente
+	 */
 	public List<Lezione> getLezioniPerDocente(Docente docente) {
 		List<Lezione> risultato = new ArrayList<>();
 		for (Lezione l : lezioni) {
@@ -130,6 +182,11 @@ public class Controller {
 		return risultato;
 	}
 
+	/**
+	 * Restituisce l'elenco di tutte le proposte di spostamento orario in attesa di valutazione.
+	 *
+	 * @return Una {@link List} di richieste aventi stato 'IN_ATTESA'
+	 */
 	public List<RichiestaSpostamento> getRichiesteInAttesa() {
 		List<RichiestaSpostamento> risultato = new ArrayList<>();
 		for (RichiestaSpostamento r : richieste) {
@@ -140,13 +197,25 @@ public class Controller {
 		return risultato;
 	}
 
-	// --- OPERAZIONI DI SCRITTURA (DB + MEMORIA) ---
+	/**
+	 * Gestisce la creazione e l'inoltro di una nuova proposta di spostamento orario.
+	 * <p>
+	 * Effettua prima la scrittura fisica sul database tramite lo strato DAO. In caso di successo,
+	 * istanzia l'oggetto RichiestaSpostamento e lo accoda alla cache in memoria per l'aggiornamento
+	 * immediato dei dati visualizzati a schermo.
+	 * </p>
+	 *
+	 * @param lezione      La lezione da spostare
+	 * @param nuovoGiorno  Il nuovo giorno proposto per lo svolgimento
+	 * @param nuovaOraInizio Orario d'inizio proposto (formato hh:mm)
+	 * @param nuovaOraFine   Orario di fine proposto (formato hh:mm)
+	 */
 	public void inviaRichiestaSpostamento(Lezione lezione, GiornoSettimana nuovoGiorno, String nuovaOraInizio, String nuovaOraFine) {
 		try {
-			// 1. Scriviamo sul database tramite DAO (Slide 15)
+			// 1. Persistenza fisica su PostgreSQL
 			richiestaSpostamentoDAO.inviaRichiestaDB(lezione.getIdLezione(), nuovoGiorno.toString(), nuovaOraInizio, nuovaOraFine);
 
-			// 2. Aggiorniamo la memoria a runtime per la visualizzazione immediata (Slide 15)
+			// 2. Allineamento dei dati transitori in memoria volatile
 			RichiestaSpostamento nuovaRichiesta = new RichiestaSpostamento(lezione, nuovoGiorno, nuovaOraInizio, nuovaOraFine);
 			richieste.add(nuovaRichiesta);
 			System.out.println("LOG: Richiesta salvata nel DB e sincronizzata in memoria.");
@@ -156,25 +225,36 @@ public class Controller {
 		}
 	}
 
+	/**
+	 * Gestisce il processo decisionale del coordinatore sulle richieste pendenti.
+	 * <p>
+	 * Se lo stato è approvato, il sistema esegue in modo transazionale l'UPDATE dell'orario
+	 * della lezione sia sul database (tramite DAO) sia in memoria (aggiornando l'oggetto del Model),
+	 * garantendo la coerenza complessiva dello schema.
+	 * </p>
+	 *
+	 * @param richiesta  La richiesta da valutare
+	 * @param nuovoStato Lo stato da assegnare ('APPROVATA' o 'RIFIUTATA')
+	 */
 	public void valutaRichiesta(RichiestaSpostamento richiesta, StatoRichiesta nuovoStato) {
 		try {
-			// 1. Aggiorniamo lo stato della richiesta sul DB
+			// 1. Aggiornamento dello stato della richiesta nel database
 			richiestaSpostamentoDAO.valutaRichiestaDB(richiesta.getIdRichiesta(), nuovoStato.toString());
 
-			// 2. Se approvata, aggiorniamo l'orario della lezione sia sul DB che nel Model
+			// 2. Se approvata, allinea la lezione reale sia su DB che nel Model
 			if (nuovoStato == StatoRichiesta.APPROVATA) {
 				Lezione lezione = richiesta.getLezioneDaSpostare();
 
-				// Aggiorniamo su DB
+				// Aggiornamento su DB
 				lezioneDAO.aggiornaOrarioLezioneDB(lezione.getIdLezione(), richiesta.getGiornoProposto().toString(), richiesta.getOraInizioProposta().toString(), richiesta.getOraFineProposta().toString());
 
-				// Aggiorniamo in memoria (Model)
+				// Aggiornamento nel Model
 				lezione.setGiorno(richiesta.getGiornoProposto());
 				lezione.setOraInizio(richiesta.getOraInizioProposta());
 				lezione.setOraFine(richiesta.getOraFineProposta());
 			}
 
-			// 3. Modifichiamo lo stato della richiesta in memoria
+			// 3. Modifica dello stato in memoria
 			richiesta.setStato(nuovoStato);
 		} catch (SQLException e) {
 			System.err.println("Errore durante la valutazione della richiesta sul DB.");
@@ -182,19 +262,25 @@ public class Controller {
 		}
 	}
 
-	// --- ALGORITMO DI SINCRONIZZAZIONE ALL'AVVIO ---
+	/**
+	 * <p>
+	 * All'avvio dell'applicazione, interroga in sequenza le tabelle di PostgreSQL per caricare
+	 * i record grezzi e ricostruisce in modo coerentgli oggetti in memoria
+	 *.
+	 * </p>
+	 */
 	private void sincronizzaConDatabase() {
 		try {
 			System.out.println("LOG: Avvio sincronizzazione iniziale da PostgreSQL...");
 
-			// IMPORTANTE: Svuotiamo le liste in memoria per evitare duplicazioni in caso di ricaricamento (Slide 17)
+			// Pulisce le liste per evitare dati orfani o duplicazioni in caso di ricaricamento
 			docenti.clear();
 			aule.clear();
 			insegnamenti.clear();
 			lezioni.clear();
 			richieste.clear();
 
-			// 1. Carichiamo tutti i Docenti dal DB e popoliamo una mappa temporanea di ID -> Oggetto
+			// 1. Caricamento Docenti
 			ArrayList<Integer> idDocenti = new ArrayList<>();
 			ArrayList<String> nomiDoc = new ArrayList<>();
 			ArrayList<String> cognomiDoc = new ArrayList<>();
@@ -214,12 +300,11 @@ public class Controller {
 				}
 				d.setIdUtente(idDocenti.get(i));
 
-				// Popoliamo la lista globale e la mappa di supporto
 				docenti.add(d);
 				mapDocenti.put(idDocenti.get(i), d);
 			}
 
-			// 2. Carichiamo tutte le Aule dal DB
+			// 2. Caricamento Aule
 			ArrayList<Integer> idAule = new ArrayList<>();
 			ArrayList<String> nomiAule = new ArrayList<>();
 			aulaDAO.leggiAuleDB(idAule, nomiAule);
@@ -231,7 +316,7 @@ public class Controller {
 				mapAule.put(idAule.get(i), a);
 			}
 
-			// 3. Carichiamo gli Insegnamenti collegandoli ai rispettivi Docenti titolari
+			// 3. Caricamento Insegnamenti
 			ArrayList<Integer> idInsegnamenti = new ArrayList<>();
 			ArrayList<String> nomiInsegn = new ArrayList<>();
 			ArrayList<Integer> cfuList = new ArrayList<>();
@@ -248,7 +333,7 @@ public class Controller {
 				mapInsegnamenti.put(idInsegnamenti.get(i), ins);
 			}
 
-			// 4. Carichiamo le Lezioni collegandole ad Aula e Insegnamento
+			// 4. Caricamento Lezioni
 			ArrayList<Integer> idLezioni = new ArrayList<>();
 			ArrayList<Integer> fkInsegnamenti = new ArrayList<>();
 			ArrayList<String> giorni = new ArrayList<>();
@@ -267,7 +352,7 @@ public class Controller {
 				mapLezioni.put(idLezioni.get(i), lez);
 			}
 
-			// 5. Carichiamo le Richieste di Spostamento
+			// 5. Caricamento Richieste
 			ArrayList<Integer> idRichieste = new ArrayList<>();
 			ArrayList<Integer> fkLezioni = new ArrayList<>();
 			ArrayList<String> giorniProp = new ArrayList<>();
@@ -293,12 +378,22 @@ public class Controller {
 	}
 
 	/**
-	 * Registra un nuovo utente nel Database e sincronizza lo stato.
+	 * Registra un nuovo utente nel database tramite DAO. In caso di successo,
+	 * riesegue la sincronizzazione per caricare l'utente appena creato nel modello di memoria.
+	 *
+	 * @param nome      Nome dell'utente
+	 * @param cognome   Cognome dell'utente
+	 * @param email     E-mail dell'utente
+	 * @param login     Username per il login
+	 * @param password  Password associata
+	 * @param ruolo     Ruolo proposto ('STUDENTE', 'DOCENTE', 'RESPONSABILE')
+	 * @param annoCorso Anno di corso dell'utente (solo se studente)
+	 * @return {@code true} se l'inserimento sul DB ha successo, altrimenti {@code false}
 	 */
 	public boolean registraNuovoUtente(String nome, String cognome, String email, String login, String password, String ruolo, String annoCorso) {
 		try {
 			utenteDAO.registraUtenteDB(nome, cognome, email, login, password, ruolo, annoCorso);
-			sincronizzaConDatabase(); // Riesegue la sincronizzazione per aggiornare le liste in memoria
+			sincronizzaConDatabase();
 			return true;
 		} catch (SQLException e) {
 			System.err.println("Errore durante la registrazione dell'utente nel DB.");
@@ -307,26 +402,44 @@ public class Controller {
 		}
 	}
 
-	// Getters per aule e insegnamenti
+	/**
+	 * Restituisce la cache delle aule registrate in memoria.
+	 *
+	 * @return Una {@link List} di oggetti {@link Aula}
+	 */
 	public List<Aula> getAule() {
 		return aule;
 	}
 
+	/**
+	 * Restituisce la cache degli insegnamenti registrati in memoria.
+	 *
+	 * @return Una {@link List} di oggetti {@link Insegnamento}
+	 */
 	public List<Insegnamento> getInsegnamenti() {
 		return insegnamenti;
 	}
 
+	/**
+	 * Restituisce la cache dei docenti registrati in memoria.
+	 *
+	 * @return Una {@link List} di oggetti {@link Docente}
+	 */
 	public List<Docente> getDocenti() {
 		return docenti;
 	}
 
 	/**
-	 * Inserisce una nuova aula sia sul DB che in memoria.
+	 * Inserisce una nuova aula sul database PostgreSQL e ne forza
+	 * l'allineamento all'interno dello strato transitorio in memoria.
+	 *
+	 * @param nome Il nome o sigla della nuova aula da registrare
+	 * @return {@code true} se l'inserimento ha avuto successo sul database, altrimenti {@code false}
 	 */
 	public boolean inserisciNuovaAula(String nome) {
 		try {
 			aulaDAO.inserisciAulaDB(nome);
-			sincronizzaConDatabase(); // Ricarica le aule dal DB
+			sincronizzaConDatabase();
 			return true;
 		} catch (SQLException e) {
 			System.err.println("Errore inserimento Aula sul DB.");
@@ -336,13 +449,20 @@ public class Controller {
 	}
 
 	/**
-	 * Inserisce un nuovo insegnamento sia sul DB che in memoria.
+	 * Inserisce un nuovo corso di insegnamento a database e ne forza
+	 * l'allineamento all'interno dello strato transitorio in memoria.
+	 *
+	 * @param nome    Nome del corso di insegnamento
+	 * @param cfu     Numero di crediti formativi attribuiti
+	 * @param anno    L'anno del percorso di studi
+	 * @param docente Il docente titolare incaricato del corso
+	 * @return {@code true} se la scrittura su database ha successo, altrimenti {@code false}
 	 */
 	public boolean inserisciNuovoInsegnamento(String nome, int cfu, AnnoCorso anno, Docente docente) {
 		try {
 			int idDocente = (docente != null) ? docente.getIdUtente() : -1;
 			insegnamentoDAO.inserisciInsegnamentoDB(nome, cfu, anno.toString(), idDocente);
-			sincronizzaConDatabase(); // Ricarica gli insegnamenti dal DB
+			sincronizzaConDatabase();
 			return true;
 		} catch (SQLException e) {
 			System.err.println("Errore inserimento Insegnamento sul DB.");
@@ -352,16 +472,20 @@ public class Controller {
 	}
 
 	/**
-	 * Inserisce una nuova lezione programmata sia sul DB che nel modello in memoria.
+	 * Registra una nuova lezione nel database relazionale e ne forza
+	 * la sincronizzazione all'interno della cache transitoria in memoria.
+	 *
+	 * @param insegnamento L'insegnamento di riferimento
+	 * @param giorno       Il giorno della settimana stabilito
+	 * @param oraInizio    Orario di inizio della lezione
+	 * @param oraFine      Orario di fine della lezione
+	 * @param aula         L'aula fisica adibita allo svolgimento
+	 * @return {@code true} se la scrittura su database ha successo, altrimenti {@code false}
 	 */
 	public boolean inserisciNuovaLezione(Insegnamento insegnamento, GiornoSettimana giorno, String oraInizio, String oraFine, Aula aula) {
 		try {
-			// 1. Scriviamo sul DB passando gli identificativi numerici (Slide 15)
 			lezioneDAO.inserisciLezioneDB(insegnamento.getIdInsegnamento(), giorno.toString(), oraInizio, oraFine, aula.getIdAula());
-
-			// 2. Ricarichiamo i dati dal DB per sincronizzare le liste
 			sincronizzaConDatabase();
-
 			System.out.println("LOG: Nuova lezione inserita sul DB e sincronizzata in memoria.");
 			return true;
 		} catch (SQLException e) {
@@ -370,4 +494,4 @@ public class Controller {
 			return false;
 		}
 	}
-} // Chiusura corretta della classe Controller
+}
