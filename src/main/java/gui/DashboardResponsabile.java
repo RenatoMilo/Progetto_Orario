@@ -83,7 +83,7 @@ public class DashboardResponsabile extends JFrame {
             }
         });
 
-        // 3. Approvazione dello spostamento orario (Slide 21)
+        // 3. Approvazione dello spostamento orario 
         btnApprova.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
